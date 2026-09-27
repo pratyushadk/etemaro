@@ -1057,6 +1057,17 @@ export async function sweepUnsoldTokensUnlocked(opts: { skipMints?: string[]; dr
   // Prune older settled entries (settled > 24h ago)
   await pruneSettledLiquidations(24).catch(() => {})
 
+  // Reconcile any closed_pending_swap performance records whose mint is no longer
+  // actively pending in the liquidation queue. Catches swaps that completed inline
+  // at position-close time but left sibling records stuck in closed_pending_swap.
+  try {
+    const { reconcileOrphanedPendingSwaps } = await import('../domain/lessons.js')
+    const activePendingMints = new Set(getPendingLiquidations('pending').map((item) => item.mint))
+    await reconcileOrphanedPendingSwaps(activePendingMints)
+  } catch (err: any) {
+    log('state_warn', `reconcileOrphanedPendingSwaps failed: ${err?.message || err}`)
+  }
+
   logAction({
     tool: 'sweepUnsoldTokens',
     args: { skipMints },
