@@ -56,11 +56,11 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
     "@types/bn.js": "^5.2.0",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@types/node-cron": "^3.0.11",
     "husky": "^9.1.7",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   }
 }
