@@ -48,9 +48,6 @@ function flushLogs(): void {
 
   const next = new Map(store)
   for (const { agentId, entry } of pendingLogs) {
-    // Skip entries for agents that have been removed while the queue was pending.
-    // Without this guard, remove(id) followed by a flush would recreate the entry
-    // via defaultTelemetry() and the agent would reappear in the store.
     if (!next.has(agentId)) continue
     const cur = next.get(agentId)!
     const logs = cur.logs.length >= MAX_LOGS ? [...cur.logs.slice(-(MAX_LOGS - 1)), entry] : [...cur.logs, entry]
@@ -112,7 +109,6 @@ export const telemetryStore = {
   remove(agentId: string): void {
     const next = new Map(store)
     next.delete(agentId)
-    // Drain any queued log entries for this agent so flushLogs can't resurrect it.
     pendingLogs = pendingLogs.filter((p) => p.agentId !== agentId)
     store = next
     notify()

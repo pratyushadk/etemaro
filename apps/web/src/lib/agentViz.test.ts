@@ -161,6 +161,30 @@ describe('strategyDiff', () => {
     expect(strategyDiff(null, { a: 1 })).toHaveLength(0)
     expect(strategyDiff({ a: 1 }, null)).toHaveLength(0)
   })
+  it('nested object: sub-fields appear as dot-notation keys', () => {
+    const rows = strategyDiff(
+      { range: { min: 1, max: 10 } },
+      { range: { min: 1, max: 20 } },
+    )
+    // Only range.max changed — range.min is unchanged and should not appear
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ key: 'range.max', kind: 'changed', from: '10', to: '20' })
+  })
+  it('nested object: unchanged sub-fields produce no rows', () => {
+    const rows = strategyDiff(
+      { range: { min: 1, max: 10 }, slippage: 0.5 },
+      { range: { min: 1, max: 10 }, slippage: 0.5 },
+    )
+    expect(rows).toHaveLength(0)
+  })
+  it('nested object: newly added sub-field shows as added row', () => {
+    const rows = strategyDiff(
+      { range: { min: 1 } },
+      { range: { min: 1, max: 10 } },
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ key: 'range.max', kind: 'added' })
+  })
 })
 
 // ─── buildBinSegments ────────────────────────────────────────────────────────

@@ -39,12 +39,11 @@ export function LogsView({ logs, agents }: Props) {
     } else {
       combined = allTelemetry.get(agentFilter)?.logs ?? []
     }
-    // Deduplicate across global+per-agent overlap; include agentId so two agents
-    // emitting the same log line at the same timestamp are not collapsed into one.
+    // Deduplicate — include agentId so lines from different agents don't collapse.
     const seen = new Set<string>()
     return combined
       .filter((l) => {
-        const key = `${(l as LogEntry & { agentId?: string }).agentId ?? 'global'}|${l.ts}|${l.category}|${l.message}`
+        const key = `${l.agentId ?? 'global'}|${l.ts}|${l.category}|${l.message}`
         if (seen.has(key)) return false
         seen.add(key)
         return true

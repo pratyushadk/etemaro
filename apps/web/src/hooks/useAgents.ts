@@ -38,9 +38,7 @@ export function useAgents(token: string): AgentsController {
   }, [token])
 
   useEffect(() => {
-    // Always run on mount — even if the tab is in the background
     reload()
-    // Poll every 15 s but skip while hidden (saves unnecessary requests)
     intervalRef.current = window.setInterval(() => {
       if (document.visibilityState !== 'hidden') reload()
     }, 15000)

@@ -119,3 +119,35 @@ describe('telemetryStore — subscribe/unsubscribe', () => {
     expect(called).toBe(2)
   })
 })
+
+describe('telemetryStore — remove()', () => {
+  it('remove() deletes the agent entry', () => {
+    telemetryStore.init('a1', 'connecting')
+    telemetryStore.remove('a1')
+    expect(telemetryStore.getSnapshot().has('a1')).toBe(false)
+  })
+
+  it('flushLogs does NOT resurrect a removed agent (pending log guard)', () => {
+    telemetryStore.init('a1', 'connecting')
+    // Queue a log for a1 — this goes into pendingLogs before any flush
+    telemetryStore.pushLog('a1', makeLog())
+    // Remove the agent before the flush fires
+    telemetryStore.remove('a1')
+    // Trigger the setTimeout flush (fake timers, 16 ms fallback)
+    vi.advanceTimersByTime(20)
+    // a1 must NOT reappear in the store
+    expect(telemetryStore.getSnapshot().has('a1')).toBe(false)
+  })
+
+  it('remove() also clears pending logs for that agent', () => {
+    telemetryStore.init('a1', 'connecting')
+    telemetryStore.init('a2', 'connecting')
+    telemetryStore.pushLog('a1', makeLog('state', 'for-a1'))
+    telemetryStore.pushLog('a2', makeLog('state', 'for-a2'))
+    telemetryStore.remove('a1')
+    vi.advanceTimersByTime(20)
+    // a2 should still get its log; a1 should be gone
+    expect(telemetryStore.getSnapshot().has('a1')).toBe(false)
+    expect(telemetryStore.getSnapshot().get('a2')?.logs).toHaveLength(1)
+  })
+})

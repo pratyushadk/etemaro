@@ -201,10 +201,7 @@ export interface DiffRow {
   to: string
 }
 
-/** Recursively flatten a nested object into dot-notation keys.
- * e.g. { range: { min: 1, max: 2 } } → { 'range.min': 1, 'range.max': 2 }
- * Stops at arrays and primitives.
- */
+/** Recursively flatten a nested object into dot-notation keys. Stops at arrays/primitives. */
 function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(obj)) {
@@ -223,8 +220,7 @@ export function strategyDiff(
   target: Record<string, unknown> | null,
 ): DiffRow[] {
   if (!current || !target) return []
-  // Flatten both objects so nested parameters (e.g. range.min / range.max)
-  // are diffed individually rather than showing the whole nested blob as one row.
+  // Flatten so nested params (e.g. range.min) diff individually, not as a blob.
   const flatCurrent = flattenObject(current)
   const flatTarget = flattenObject(target)
   const allKeys = new Set([...Object.keys(flatCurrent), ...Object.keys(flatTarget)]).values()
@@ -279,10 +275,8 @@ export function buildBinSegments(pos: PositionSummary): BinBarSegment[] | null {
   for (let i = 0; i < SLOTS; i++) {
     const binStart = lo + i * step
     const binEnd = lo + (i + 1) * step
-    // active-bin check uses strict < on the right boundary so each bin maps to exactly
-    // one segment (half-open interval [binStart, binEnd)). The range check two lines
-    // below uses <= on both sides because activeBin === hi is still inside the position.
-    // These two conventions intentionally differ.
+    // Half-open [binStart, binEnd) so each bin maps to exactly one segment.
+    // The range check below uses <= on both sides — intentionally different.
     const isActive = activeBin >= binStart && activeBin < binEnd
     const kind: BinBarSegment['kind'] = isActive
       ? inRange
