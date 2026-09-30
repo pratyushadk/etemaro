@@ -29,7 +29,6 @@ export function useAgents(token: string): AgentsController {
   const intervalRef = useRef<number | undefined>(undefined)
 
   const reload = useCallback(() => {
-    if (document.visibilityState === 'hidden') return
     fetchJson<{ agents: ManagedAgent[] }>('/api/agents', token)
       .then((res) => {
         setAgents(res.agents ?? [])
@@ -39,8 +38,12 @@ export function useAgents(token: string): AgentsController {
   }, [token])
 
   useEffect(() => {
+    // Always run on mount — even if the tab is in the background
     reload()
-    intervalRef.current = window.setInterval(reload, 15000)
+    // Poll every 15 s but skip while hidden (saves unnecessary requests)
+    intervalRef.current = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden') reload()
+    }, 15000)
     const onVisible = () => reload()
     document.addEventListener('visibilitychange', onVisible)
     return () => {

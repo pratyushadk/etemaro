@@ -28,7 +28,6 @@ export function LogsView({ logs, agents }: Props) {
   const [textFilter, setTextFilter] = useState('')
   const [paused, setPaused] = useState(false)
   const listRef = useRef<HTMLDivElement | null>(null)
-  const _seqRef = useRef(0)
 
   // Combine global logs + per-agent logs based on filter selection
   const sourceLogs = useMemo<Array<LogEntry & { _key: string }>>(() => {
@@ -40,11 +39,12 @@ export function LogsView({ logs, agents }: Props) {
     } else {
       combined = allTelemetry.get(agentFilter)?.logs ?? []
     }
-    // Deduplicate by ts+category+message (global and per-agent sockets may overlap)
+    // Deduplicate across global+per-agent overlap; include agentId so two agents
+    // emitting the same log line at the same timestamp are not collapsed into one.
     const seen = new Set<string>()
     return combined
       .filter((l) => {
-        const key = `${l.ts}|${l.category}|${l.message}`
+        const key = `${(l as LogEntry & { agentId?: string }).agentId ?? 'global'}|${l.ts}|${l.category}|${l.message}`
         if (seen.has(key)) return false
         seen.add(key)
         return true

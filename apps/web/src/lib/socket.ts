@@ -196,6 +196,7 @@ export class DaemonSocket {
 
   /** Wire up immediate-reconnect on browser `online` and visibility restore. */
   installWindowHandlers(): this {
+    if (this.disposed) return this
     const onOnline = () => {
       if (this._status === 'disconnected' && !this.disposed) {
         clearTimeout(this.retryTimer)

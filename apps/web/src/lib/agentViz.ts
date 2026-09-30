@@ -201,17 +201,38 @@ export interface DiffRow {
   to: string
 }
 
+/** Recursively flatten a nested object into dot-notation keys.
+ * e.g. { range: { min: 1, max: 2 } } → { 'range.min': 1, 'range.max': 2 }
+ * Stops at arrays and primitives.
+ */
+function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${k}` : k
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      Object.assign(out, flattenObject(v as Record<string, unknown>, fullKey))
+    } else {
+      out[fullKey] = v
+    }
+  }
+  return out
+}
+
 export function strategyDiff(
   current: Record<string, unknown> | null,
   target: Record<string, unknown> | null,
 ): DiffRow[] {
   if (!current || !target) return []
-  const allKeys = new Set([...Object.keys(current), ...Object.keys(target)]).values()
+  // Flatten both objects so nested parameters (e.g. range.min / range.max)
+  // are diffed individually rather than showing the whole nested blob as one row.
+  const flatCurrent = flattenObject(current)
+  const flatTarget = flattenObject(target)
+  const allKeys = new Set([...Object.keys(flatCurrent), ...Object.keys(flatTarget)]).values()
   const rows: DiffRow[] = []
   for (const key of allKeys) {
-    if (DIFF_IGNORE.has(key)) continue
-    const from = current[key]
-    const to = target[key]
+    if (DIFF_IGNORE.has(key.split('.')[0] ?? key)) continue
+    const from = flatCurrent[key]
+    const to = flatTarget[key]
     const fromStr = from != null ? JSON.stringify(from) : undefined
     const toStr = to != null ? JSON.stringify(to) : undefined
     if (fromStr === toStr) continue
@@ -258,6 +279,10 @@ export function buildBinSegments(pos: PositionSummary): BinBarSegment[] | null {
   for (let i = 0; i < SLOTS; i++) {
     const binStart = lo + i * step
     const binEnd = lo + (i + 1) * step
+    // active-bin check uses strict < on the right boundary so each bin maps to exactly
+    // one segment (half-open interval [binStart, binEnd)). The range check two lines
+    // below uses <= on both sides because activeBin === hi is still inside the position.
+    // These two conventions intentionally differ.
     const isActive = activeBin >= binStart && activeBin < binEnd
     const kind: BinBarSegment['kind'] = isActive
       ? inRange

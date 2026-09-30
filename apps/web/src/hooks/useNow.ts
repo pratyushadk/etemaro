@@ -1,7 +1,5 @@
 /**
- * useNow — single shared clock hook (one interval app-wide).
- *
- * Single shared clock hook — one interval app-wide, replacing per-component timers.
+ * useNow — single shared clock hook. One interval per consumer, replacing N per-component timers.
  */
 import { useEffect, useState } from 'react'
 
